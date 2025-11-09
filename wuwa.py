@@ -66,26 +66,20 @@ def wish():
 def main():
 	batch = 1000  # number of pulls per batch
 	batch_size = 10000  # number of batches
-
-	# store (mean, std) for each finished batch
 	result = numpy.ndarray((batch_size, 2))
 
 	console = Console()
-	# Use Live to update the console once per finished batch
 	with Live(console=console, refresh_per_second=4) as live:
 		for i in range(batch_size):
-			# run one batch of `batch` wishes
 			data = numpy.array([wish() for _ in range(batch)])
 			std = data.std()
 			mean = data.mean()
 			result[i] = (mean, std)
 
-			# format according to your request
 			body = f"Mean: {mean:.2f}\nStandard Deviation: {std:.3f}"
 			panel = Panel(body, title=f"Batch {i+1}/{batch_size}", expand=False)
 			live.update(panel)
 
-	# final print (keeps a copy in stdout after Live closes)
 	standard_deviation = numpy.mean(result[:, 1])
 	mean = numpy.mean(result[:, 0])
 	print(f"Mean: {mean:.2f}, Standard Deviation: {standard_deviation:.3f}")
@@ -94,19 +88,15 @@ def main():
 	# 抽中五星角色所花費的抽數（64 到 78）
 	x = numpy.arange(64, 79)
 
-	# 建立圖表
 	plt.figure(figsize=(10, 6))
 	bars = plt.bar(x, record, color="#6fa8dc", edgecolor="black")
 
-	# 加上標題與軸標籤
 	plt.title("record", fontsize=16)
 	plt.xlabel("pulls", fontsize=12)
 	plt.ylabel("times", fontsize=12)
 
-	# 加上 y 軸虛線輔助線
 	plt.grid(axis="y", linestyle="--", alpha=0.5)
 
-	# 儲存圖像
 	plt.tight_layout()
 	plt.savefig("record.png")
 	plt.show()
