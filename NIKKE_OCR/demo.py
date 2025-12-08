@@ -10,11 +10,15 @@ from g2m import CNN
 import os
 import torch, torchvision
 import numpy
+from PIL import Image, ImageDraw, ImageShow, ImageTransform
 
 def main():
     # prepare the input image
     os.makedirs("./temp", exist_ok=True)
     image_source = g2m.to_png("./temp", "temp.png")
+    if image_source is None:
+        # load image from ./temp/temp.png
+        image_source = Image.open("./temp/temp.png")
     image = list()
     dx = 635 // 8
     dy = 1080 // 14
@@ -44,54 +48,76 @@ def main():
             output_list.append(number)
     matrix = numpy.array(output_list).reshape((14, 8))
     print(matrix)
-    calculate(matrix)
-
-def build_prefix(matrix: numpy.ndarray):
-    rows, cols = matrix.shape
-    prefix = numpy.zeros((rows+1, cols+1), dtype=int)
-    for i in range(1, rows+1):
-        for j in range(1, cols+1):
-            prefix[i, j] = prefix[i-1, j] - prefix[i-1, j-1] + prefix[i, j-1] + matrix[i-1, j-1]
-    return prefix
-
-def sub_sum(prefix, r1, r2, c1, c2):
-    return prefix[r2+1, c2+1] - prefix[r2+1, c2]- prefix[r1, c2+1] + prefix[r1, c1]
+    grade = dfs(matrix)
 
 def eliminate(matrix, r1, r2, c1, c2):
     matrix[r1:r2+1, c1:c2+1] = 0
     return
 
-def find_rect(matrix, prefix):
-    rows, cols = matrix.shape
-    rects = list()
-    for r1 in range(rows):
-        for r2 in range(r1, rows):
-            for c1 in range(cols):
-                for c2 in range(c1, cols):
-                    s = sub_sum(prefix=prefix, r1=r1, r2=r2, c1=c1, c2=c2)
-                    area = (r2 - r1 + 1) * (c2 - c1 + 1)
-                    if s == 10 and area > 1:
-                        non_zero_count = numpy.sum(matrix[r1:r2+1, c1:c2+1] != 0)
-                        rects.append((non_zero_count, area, r1, r2, c1, c2))
-    rects.sort(reverse=True)
-    return rects
+def diffusion(matrix, r1, r2, c1, c2):
+    top = left = 0
+    bottom = right = 100
+    for y in range(r1, r2 + 1):
+        for x in range(c1, c2 + 1):
+            if matrix[y, x] == 0:
+                top = max(0, y - 1, top)
+                left = max(0, x - 1, left)
+                bottom = min(13, y + 1, bottom)
+                right = min(7, x + 1, right)
+    return (top, bottom, left, right)
 
-def calculate(matrix: numpy.ndarray):
+def find_submatrix(matrix, top, bottom, left, right, score):
+    result = {
+        "is_find": False,
+        "output": None,
+    }
+    for row in range(top, bottom + 1):
+        for col in range(left, right + 1):
+            for dy in reversed(range(0, bottom - top + 1)):
+                for dx in reversed(range(0, right - left + 1)):
+                    if numpy.sum(matrix[row:row+dy, col:col+dx]) == 10:
+                        # set to 0 and update matrix
+                        result["is_find"] = True
+                        score += numpy.count_nonzero(matrix[row:row+dy, col:col+dx])
+                        eliminate(matrix, row, row+dy, col, col+dx)
+                        top, bottom, left, right = diffusion(matrix, top, bottom, left, right)
+                        result["output"] = (matrix, top, bottom, left, right, score)
+                        return result
+    return result
+                
+
+def dfs(matrix: numpy.ndarray):
     score = 0
-    prefix = build_prefix(matrix)
+    # step 1: find submatrix since numbers are compact in the beginning
+    top, bottom, left, right = 0, 0, 0, 0
+    # [2, 1]
+    for row in range(13):
+        for col in range(8):
+            if numpy.sum(matrix[row:row+1, col]) == 10:
+                top = row
+                bottom = row + 1
+                left = right = col
+                score += 2
+    # [1, 2]
+    for row in range(14):
+        for col in range(7):
+            if numpy.sum(matrix[row, col:col+1]) == 10:
+                top = bottom = row
+                left = col
+                right = col + 1
+                score += 2
+            
+    # step 2: eliminate the initial submatrix and diffuse 1 block
+    eliminate(matrix, top, bottom, left, right)
+    top, bottom, left, right = diffusion(matrix, top, bottom, left, right)
+    
+    # step 3: dfs the best sequence of slices
     while True:
-        rects = find_rect(matrix=matrix, prefix=prefix)
-        if not rects:
-            print(score)
-            return
-        non_zero, area, r1, r2, c1, c2 = rects[0]
-        score += non_zero
-        eliminate(matrix, r1, r2, c1, c2)
-        prefix = build_prefix(matrix)
-        with open("./log.txt", 'a+') as ouf:
-            ouf.write(matrix.__str__())
-            ouf.write("\n\n")
-
+        result = find_submatrix(matrix, top, bottom, left, right, score)
+        if not result["is_find"]:
+            # spread attention submatrix by 1 block
+            
+            return score
 
 
 if __name__ == "__main__":

@@ -15,8 +15,7 @@ def to_png(out_dir="./dataset", filename="temp.png"):
     image = ImageGrab.grabclipboard()
     if image is None:
         console.print("❌ [bold #fc535c]There is nothing in the clipboard.[/]")
-        exit(1)
-        return
+        return None
     
     image = image.resize((635, 1080), Image.Resampling.LANCZOS)
 
@@ -28,7 +27,6 @@ def to_png(out_dir="./dataset", filename="temp.png"):
     except Exception as e:
         console.print(f"[bold #ba1a32]Unknown error: {e}[/]")
         exit(1)
-        return
     return image
 
 def resize(out_dir: str, filename: str):
