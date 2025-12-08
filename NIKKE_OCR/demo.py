@@ -47,23 +47,18 @@ def main():
             number = output.argmax(dim=1).item() + 1
             output_list.append(number)
     matrix = numpy.array(output_list).reshape((14, 8))
-    print(matrix)
     grade = dfs(matrix)
+    print(grade)
 
 def eliminate(matrix, r1, r2, c1, c2):
     matrix[r1:r2+1, c1:c2+1] = 0
     return
 
-def diffusion(matrix, r1, r2, c1, c2):
-    top = left = 0
-    bottom = right = 100
-    for y in range(r1, r2 + 1):
-        for x in range(c1, c2 + 1):
-            if matrix[y, x] == 0:
-                top = max(0, y - 1, top)
-                left = max(0, x - 1, left)
-                bottom = min(13, y + 1, bottom)
-                right = min(7, x + 1, right)
+def diffusion(r1, r2, c1, c2):
+    top = max(0, r1 - 1)
+    left = max(0, c1 - 1)
+    bottom = min(13, r2 + 1)
+    right = min(7, c2 + 1)
     return (top, bottom, left, right)
 
 def find_submatrix(matrix, top, bottom, left, right, score):
@@ -80,7 +75,7 @@ def find_submatrix(matrix, top, bottom, left, right, score):
                         result["is_find"] = True
                         score += numpy.count_nonzero(matrix[row:row+dy, col:col+dx])
                         eliminate(matrix, row, row+dy, col, col+dx)
-                        top, bottom, left, right = diffusion(matrix, top, bottom, left, right)
+                        top, bottom, left, right = diffusion(top, bottom, left, right)
                         result["output"] = (matrix, top, bottom, left, right, score)
                         return result
     return result
@@ -88,36 +83,63 @@ def find_submatrix(matrix, top, bottom, left, right, score):
 
 def dfs(matrix: numpy.ndarray):
     score = 0
-    # step 1: find submatrix since numbers are compact in the beginning
-    top, bottom, left, right = 0, 0, 0, 0
-    # [2, 1]
-    for row in range(13):
-        for col in range(8):
-            if numpy.sum(matrix[row:row+1, col]) == 10:
-                top = row
-                bottom = row + 1
-                left = right = col
-                score += 2
-    # [1, 2]
-    for row in range(14):
-        for col in range(7):
-            if numpy.sum(matrix[row, col:col+1]) == 10:
-                top = bottom = row
-                left = col
-                right = col + 1
-                score += 2
-            
-    # step 2: eliminate the initial submatrix and diffuse 1 block
-    eliminate(matrix, top, bottom, left, right)
-    top, bottom, left, right = diffusion(matrix, top, bottom, left, right)
-    
-    # step 3: dfs the best sequence of slices
-    while True:
-        result = find_submatrix(matrix, top, bottom, left, right, score)
-        if not result["is_find"]:
-            # spread attention submatrix by 1 block
-            
+
+    with open("./log.txt", 'w') as f:
+        # step 1: find submatrix since numbers are compact in the beginning
+        initial_flag = False
+        top = bottom = left = right = 0
+        # Size: [2, 1]
+        for row in range(13):
+            for col in range(8):
+                if numpy.sum(matrix[row:row+2, col]) == 10:
+                    top = row
+                    bottom = row + 1
+                    left = right = col
+                    score += 2
+                    f.write("Size: [2, 1], " + matrix[row:row+2, col].__str__() + '\n')
+                    f.write(f"{top}, {bottom}, {left}, {right}\n")
+                    initial_flag = True
+                    break
+            if initial_flag:
+                break
+        # Size: [1, 2]
+        if not initial_flag:
+            for row in range(14):
+                for col in range(7):
+                    if numpy.sum(matrix[row, col:col+2]) == 10:
+                        top = bottom = row
+                        left = col
+                        right = col + 1
+                        score += 2
+                        f.write("Size: [1, 2], " + matrix[row, col:col+2].__str__() + '\n')
+                        f.write(f"{top}, {bottom}, {left}, {right}\n")
+                        initial_flag = True
+                        break
+                if initial_flag:
+                    break
+                
+        if not initial_flag:
+            print("Fail to initialize.")
             return score
+
+        # step 2: eliminate the initial submatrix and diffuse 1 block
+        eliminate(matrix, top, bottom, left, right)
+        top, bottom, left, right = diffusion(top, bottom, left, right)
+        f.write(matrix.__str__())
+        f.write('\n')
+        
+        # step 3: dfs the best sequence of slices
+        while True:
+            result = find_submatrix(matrix, top, bottom, left, right, score)
+            f.write(f"{matrix[top:bottom+1, left:right+1].__str__()}\n")
+            if result["output"] is not None:
+                score = result["output"][-1]
+            if top == 0 and bottom == 13 and left == 0 and right == 7:
+                # attention the hole matrix
+                return score
+            if not result["is_find"]:
+                # spread attention submatrix by 1 block
+                top, bottom, left, right = diffusion(top, bottom, left, right)
 
 
 if __name__ == "__main__":
