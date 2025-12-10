@@ -21,7 +21,7 @@ def eliminate(matrix: numpy.ndarray, rect: Rect | None) -> tuple[numpy.ndarray, 
         x, y, w, h = rect.start_x, rect.start_y, rect.width, rect.height
         new_matrix[y:(y + h), x:(x + w)] = 0
         score = numpy.count_nonzero(matrix[y:(y + h), x:(x + w)])
-    return new_matrix, score
+    return new_matrix, score # type: ignore
 
 def generate(matrix: numpy.ndarray) -> list[Rect]:
     """
@@ -32,17 +32,19 @@ def generate(matrix: numpy.ndarray) -> list[Rect]:
         for r2 in range(r1, SIZE_Y):
             for c1 in range(0, SIZE_X):
                 for c2 in range(c1, SIZE_X):
-                    pass
-
+                    if numpy.sum(matrix[r1:(r2+1), c1:(c2+1)]) == 10:
+                        result.append(Rect(c1, r1, c2 - c1 + 1, r2 - r1 + 1))
     return result
 
 class Node:
-    def __init__(self, parent_matrix: numpy.ndarray, choice: Rect | None, parent: 'Node' = None):
+    def __init__(self, parent_matrix: numpy.ndarray, choice: Rect | None, parent: Node | None): # type: ignore
         self.matrix, self.score = eliminate(parent_matrix, choice)
-        self.choice = choice
         self.parent = parent
+        self.choice = choice
         self.children: list[Node] = list()
-        self.best_child: typing.Optional[Node] = None
+        self.best_steps: list[Rect | None]
+        self.best_score = 0
+        self.score += self.parent.score if self.parent is not None else 0
 
     def apply(self, rect: Rect) -> 'Node':
         new_matrix = eliminate(self.matrix, rect)
@@ -57,4 +59,23 @@ class Node:
             path.append(current.choice)
             current = current.parent
         return path[::-1]
+    
+    def dfs(self) -> tuple[list[Rect | None], int]:
+        """
+        1. scan the matrix and record possible steps.
+        2.1 if no possible step, return score and steps.
+        2.2 if there are some possible steps, dfs them, and return the best score of them.
+        """
+        possible_steps = generate(self.matrix)
+        for step in possible_steps:
+            self.children.append(Node(self.matrix, step, self))
+        
+        for child in self.children:
+            child_steps, child_score = child.dfs()
+            if child_score > self.best_score:
+                self.best_score = child_score
+                self.best_steps = child_steps
+        self.best_steps.append(self.choice)
+        
+        return self.best_steps, self.best_score
 

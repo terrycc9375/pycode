@@ -48,8 +48,9 @@ def main():
             number = output.argmax(dim=1).item() + 1
             output_list.append(number)
     matrix = numpy.array(output_list).reshape((g2m.SIZE_Y, g2m.SIZE_X))
-    grade = dfs(matrix)
-    print(grade)
+    root = Node(parent_matrix=matrix, choice=None, parent=None)
+    best_steps, best_score = root.dfs()
+    
 
 # def eliminate(matrix, r1, r2, c1, c2):
 #     matrix[r1:r2+1, c1:c2+1] = 0
