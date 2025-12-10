@@ -50,6 +50,7 @@ class Node:
         self.matrix, self.gain = eliminate(parent_matrix, choice)
         self.parent = parent
         self.choice = choice
+        self.depth = 0
         self.children: list[Node] = list()
         self.best_child_score = 0
         self.best_child_steps: list[Rect | None] = list()
@@ -65,6 +66,9 @@ class Node:
             return memo[key]
         
         possible_steps = generate(self.matrix)
+        if self.parent:
+            self.depth = self.parent.depth + 1
+        print(f"Depth: {self.depth}, choices: {len(possible_steps)}")
         if not possible_steps:
             Node.global_trail += 1
             memo[key] = ([self.choice], 0)

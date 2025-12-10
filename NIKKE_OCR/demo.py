@@ -52,19 +52,19 @@ def main():
     matrix = numpy.array(output_list).reshape((g2m.SIZE_Y, g2m.SIZE_X))
     root = Node(parent_matrix=matrix, choice=None, parent=None)
 
-    # print("start searching")
-    # console = rich.console.Console()
-    # start_time = time.time()
-    # Node.global_trail = 0
-    # with rich.live.Live(console=console, refresh_per_second=10) as live:
-    #     elapsed = time.time() - start_time
-    #     live.update(rich.panel.Panel(f"Elapsed: {elapsed:.1f}s\nRun: {Node.global_trail} times", title=f"tracker", expand=False))
-    #     best_steps, best_score = root.dfs()
+    print("start searching")
+    console = rich.console.Console()
+    start_time = time.time()
+    Node.global_trail = 0
+    with rich.live.Live(console=console, refresh_per_second=10) as live:
+        elapsed = time.time() - start_time
+        live.update(rich.panel.Panel(f"Elapsed: {elapsed:.1f}s\nRun: {Node.global_trail} times", title=f"tracker", expand=False))
+        best_steps, best_score = root.dfs()
     
-    # print(best_score)
-    # for i, rect in enumerate(best_steps, 1):
-    #     with open("./log.txt", 'w') as f:
-    #         f.write(f"Step {i:2d}: {rect}\n")
+    print(best_score)
+    for i, rect in enumerate(best_steps, 1):
+        with open("./log.txt", 'w') as f:
+            f.write(f"Step {i:2d}: {rect}\n")
     with open("./log.txt", 'w') as f:
         f.write(matrix.__str__() + '\n')
         for rect in generate(matrix):
