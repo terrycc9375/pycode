@@ -10,6 +10,9 @@ import torch
 import torchvision
 import numpy
 
+SIZE_X = 8
+SIZE_Y = 14
+
 console = rich.console.Console()
 def to_png(out_dir="./dataset", filename="temp.png"):
     image = ImageGrab.grabclipboard()
@@ -41,17 +44,17 @@ def cut(path: str, id: int):
     os.makedirs(f"{path}/input", exist_ok=True)
     img = Image.open(f"{path}/{id}.png").convert("RGB")
 
-    dx = 635 // 8
-    dy = 1080 // 14
-    for j in range(14):
-        for i in range(8):
+    dx = 635 // SIZE_X
+    dy = 1080 // SIZE_Y
+    for j in range(SIZE_Y):
+        for i in range(SIZE_X):
             left = i * dx
             right = left + dx
             upper = j * dy
             lower = upper + dy
 
             unit = img.crop((left, upper, right, lower))
-            unit.save(f"{path}/input/{(id - 1) * 112 + j * 8 + i}.png")
+            unit.save(f"{path}/input/{(id - 1) * 112 + j * SIZE_X + i}.png")
 
     # draw = ImageDraw.Draw(img)
 
@@ -193,10 +196,10 @@ def main():
 
     test_image = list()
     test_img_src = Image.open(f"{test_directory}/test.png").convert("RGB")
-    dx = 635 // 8
-    dy = 1080 // 14
-    for j in range(14):
-        for i in range(8):
+    dx = 635 // SIZE_X
+    dy = 1080 // SIZE_Y
+    for j in range(SIZE_Y):
+        for i in range(SIZE_X):
             left = i * dx
             right = left + dx
             upper = j * dy
@@ -218,7 +221,6 @@ def main():
 
     os.makedirs("model", exist_ok=True)
     torch.save(model, "model/002.pt")
-
 
 
 if __name__ == "__main__":

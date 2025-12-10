@@ -1,2 +1,3 @@
 *.pth
 *.safetensor
+__pycache__

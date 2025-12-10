@@ -7,6 +7,7 @@
 
 import g2m
 from g2m import CNN
+from brutal import Rect, Node, eliminate
 import os
 import torch, torchvision
 import numpy
@@ -20,10 +21,10 @@ def main():
         # load image from ./temp/temp.png
         image_source = Image.open("./temp/temp.png")
     image = list()
-    dx = 635 // 8
-    dy = 1080 // 14
-    for j in range(14):
-        for i in range(8):
+    dx = 635 // g2m.SIZE_X
+    dy = 1080 // g2m.SIZE_Y
+    for j in range(g2m.SIZE_Y):
+        for i in range(g2m.SIZE_X):
             left = i * dx
             right = left + dx
             upper = j * dy
@@ -37,7 +38,7 @@ def main():
     )
 
     # load model and parse
-    model = torch.load("model/002.pt", weights_only=False).to("cuda")
+    model: CNN = torch.load("model/002.pt", weights_only=False).to("cuda")
     model.eval()
     output_list = list()
     with torch.no_grad():
@@ -46,19 +47,19 @@ def main():
             output = model(img.unsqueeze(0))
             number = output.argmax(dim=1).item() + 1
             output_list.append(number)
-    matrix = numpy.array(output_list).reshape((14, 8))
+    matrix = numpy.array(output_list).reshape((g2m.SIZE_Y, g2m.SIZE_X))
     grade = dfs(matrix)
     print(grade)
 
-def eliminate(matrix, r1, r2, c1, c2):
-    matrix[r1:r2+1, c1:c2+1] = 0
-    return
+# def eliminate(matrix, r1, r2, c1, c2):
+#     matrix[r1:r2+1, c1:c2+1] = 0
+#     return
 
 def diffusion(r1, r2, c1, c2):
     top = max(0, r1 - 1)
     left = max(0, c1 - 1)
-    bottom = min(13, r2 + 1)
-    right = min(7, c2 + 1)
+    bottom = min(g2m.SIZE_Y - 1, r2 + 1)
+    right = min(g2m.SIZE_X - 1, c2 + 1)
     return (top, bottom, left, right)
 
 def find_submatrix(matrix, top, bottom, left, right, score):
@@ -89,8 +90,8 @@ def dfs(matrix: numpy.ndarray):
         initial_flag = False
         top = bottom = left = right = 0
         # Size: [2, 1]
-        for row in range(13):
-            for col in range(8):
+        for row in range(g2m.SIZE_Y - 1):
+            for col in range(g2m.SIZE_X):
                 if numpy.sum(matrix[row:row+2, col]) == 10:
                     top = row
                     bottom = row + 1
@@ -104,8 +105,8 @@ def dfs(matrix: numpy.ndarray):
                 break
         # Size: [1, 2]
         if not initial_flag:
-            for row in range(14):
-                for col in range(7):
+            for row in range(g2m.SIZE_Y):
+                for col in range(g2m.SIZE_X - 1):
                     if numpy.sum(matrix[row, col:col+2]) == 10:
                         top = bottom = row
                         left = col
@@ -134,7 +135,7 @@ def dfs(matrix: numpy.ndarray):
             f.write(f"{matrix[top:bottom+1, left:right+1].__str__()}\n")
             if result["output"] is not None:
                 score = result["output"][-1]
-            if top == 0 and bottom == 13 and left == 0 and right == 7:
+            if top == 0 and bottom == g2m.SIZE_Y - 1 and left == 0 and right == g2m.SIZE_X - 1:
                 # attention the hole matrix
                 return score
             if not result["is_find"]:
