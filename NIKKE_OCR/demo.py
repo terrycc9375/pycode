@@ -7,11 +7,13 @@
 
 import g2m
 from g2m import CNN
-from brutal import Rect, Node, eliminate
+from brutal import Rect, Node, eliminate, generate
 import os
+import time
 import torch, torchvision
 import numpy
 from PIL import Image, ImageDraw, ImageShow, ImageTransform
+import rich, rich.live, rich.panel
 
 def main():
     # prepare the input image
@@ -49,99 +51,24 @@ def main():
             output_list.append(number)
     matrix = numpy.array(output_list).reshape((g2m.SIZE_Y, g2m.SIZE_X))
     root = Node(parent_matrix=matrix, choice=None, parent=None)
-    best_steps, best_score = root.dfs()
+
+    # print("start searching")
+    # console = rich.console.Console()
+    # start_time = time.time()
+    # Node.global_trail = 0
+    # with rich.live.Live(console=console, refresh_per_second=10) as live:
+    #     elapsed = time.time() - start_time
+    #     live.update(rich.panel.Panel(f"Elapsed: {elapsed:.1f}s\nRun: {Node.global_trail} times", title=f"tracker", expand=False))
+    #     best_steps, best_score = root.dfs()
     
-
-# def eliminate(matrix, r1, r2, c1, c2):
-#     matrix[r1:r2+1, c1:c2+1] = 0
-#     return
-
-def diffusion(r1, r2, c1, c2):
-    top = max(0, r1 - 1)
-    left = max(0, c1 - 1)
-    bottom = min(g2m.SIZE_Y - 1, r2 + 1)
-    right = min(g2m.SIZE_X - 1, c2 + 1)
-    return (top, bottom, left, right)
-
-def find_submatrix(matrix, top, bottom, left, right, score):
-    result = {
-        "is_find": False,
-        "output": None,
-    }
-    for row in range(top, bottom + 1):
-        for col in range(left, right + 1):
-            for dy in reversed(range(0, bottom - top + 1)):
-                for dx in reversed(range(0, right - left + 1)):
-                    if numpy.sum(matrix[row:row+dy, col:col+dx]) == 10:
-                        # set to 0 and update matrix
-                        result["is_find"] = True
-                        score += numpy.count_nonzero(matrix[row:row+dy, col:col+dx])
-                        eliminate(matrix, row, row+dy, col, col+dx)
-                        top, bottom, left, right = diffusion(top, bottom, left, right)
-                        result["output"] = (matrix, top, bottom, left, right, score)
-                        return result
-    return result
-                
-
-def dfs(matrix: numpy.ndarray):
-    score = 0
-
+    # print(best_score)
+    # for i, rect in enumerate(best_steps, 1):
+    #     with open("./log.txt", 'w') as f:
+    #         f.write(f"Step {i:2d}: {rect}\n")
     with open("./log.txt", 'w') as f:
-        # step 1: find submatrix since numbers are compact in the beginning
-        initial_flag = False
-        top = bottom = left = right = 0
-        # Size: [2, 1]
-        for row in range(g2m.SIZE_Y - 1):
-            for col in range(g2m.SIZE_X):
-                if numpy.sum(matrix[row:row+2, col]) == 10:
-                    top = row
-                    bottom = row + 1
-                    left = right = col
-                    score += 2
-                    f.write("Size: [2, 1], " + matrix[row:row+2, col].__str__() + '\n')
-                    f.write(f"{top}, {bottom}, {left}, {right}\n")
-                    initial_flag = True
-                    break
-            if initial_flag:
-                break
-        # Size: [1, 2]
-        if not initial_flag:
-            for row in range(g2m.SIZE_Y):
-                for col in range(g2m.SIZE_X - 1):
-                    if numpy.sum(matrix[row, col:col+2]) == 10:
-                        top = bottom = row
-                        left = col
-                        right = col + 1
-                        score += 2
-                        f.write("Size: [1, 2], " + matrix[row, col:col+2].__str__() + '\n')
-                        f.write(f"{top}, {bottom}, {left}, {right}\n")
-                        initial_flag = True
-                        break
-                if initial_flag:
-                    break
-                
-        if not initial_flag:
-            print("Fail to initialize.")
-            return score
-
-        # step 2: eliminate the initial submatrix and diffuse 1 block
-        eliminate(matrix, top, bottom, left, right)
-        top, bottom, left, right = diffusion(top, bottom, left, right)
-        f.write(matrix.__str__())
-        f.write('\n')
-        
-        # step 3: dfs the best sequence of slices
-        while True:
-            result = find_submatrix(matrix, top, bottom, left, right, score)
-            f.write(f"{matrix[top:bottom+1, left:right+1].__str__()}\n")
-            if result["output"] is not None:
-                score = result["output"][-1]
-            if top == 0 and bottom == g2m.SIZE_Y - 1 and left == 0 and right == g2m.SIZE_X - 1:
-                # attention the hole matrix
-                return score
-            if not result["is_find"]:
-                # spread attention submatrix by 1 block
-                top, bottom, left, right = diffusion(top, bottom, left, right)
+        f.write(matrix.__str__() + '\n')
+        for rect in generate(matrix):
+            f.write(f"{rect}, mat = \n{matrix[rect.start_y:rect.start_y+rect.height, rect.start_x:rect.start_x+rect.width]}\n")
 
 
 if __name__ == "__main__":
