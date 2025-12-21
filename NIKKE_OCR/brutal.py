@@ -1,6 +1,6 @@
 import numpy
 import typing
-from g2m import SIZE_X, SIZE_Y
+from NIKKE_OCR.model import SIZE_X, SIZE_Y
 
 class Rect:
     def __init__(self, start_x: int, start_y: int, width: int, height: int):
@@ -45,7 +45,6 @@ def generate(matrix: numpy.ndarray) -> list[Rect]:
     return result
 
 class Node:
-    global_trail = 0
     def __init__(self, parent_matrix: numpy.ndarray, choice: Rect | None, parent: "Node" = None): # type: ignore
         self.matrix, self.gain = eliminate(parent_matrix, choice)
         self.parent = parent
@@ -68,9 +67,9 @@ class Node:
         possible_steps = generate(self.matrix)
         if self.parent:
             self.depth = self.parent.depth + 1
-        print(f"Depth: {self.depth}, choices: {len(possible_steps)}")
+        with open("./log.txt", 'a') as f:
+            f.write(f"Depth: {self.depth}, choices: {len(possible_steps)}\n")
         if not possible_steps:
-            Node.global_trail += 1
             memo[key] = ([self.choice], 0)
             return [self.choice], 0
         for step in possible_steps:

@@ -1,5 +1,11 @@
 """
-This file is designed to convert a screenshot to a matrix (graph-to-matrix)
+model
+1. CNN
+    - Supervised learning for number recognition
+    - 10 class (1~9 and blank is 0)
+2. AlphaNum
+    - Reinforcement learning for making optimal decision
+    - Agent-Critic model
 """
 import PIL
 from PIL import Image, ImageGrab, ImageDraw
@@ -10,13 +16,13 @@ import torch
 import torchvision
 import numpy
 
-SIZE_X = 8
-SIZE_Y = 14
+SIZE_X = 10
+SIZE_Y = 16
 
 console = rich.console.Console()
-def to_png(out_dir="./dataset", filename="temp.png"):
+def clipboard_to_png(out_dir="./dataset", filename="temp.png"):
     image = ImageGrab.grabclipboard()
-    if image is None:
+    if image is None or isinstance(image, list):
         console.print("❌ [bold #fc535c]There is nothing in the clipboard.[/]")
         return None
     
@@ -113,7 +119,6 @@ class CNN(torch.nn.Module):
             torch.nn.Dropout(0.1),
             torch.nn.Linear(512, 9),
         )
-        
         
     def forward(self, x):
         x = self.features(x)

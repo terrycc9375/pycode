@@ -5,8 +5,8 @@
 4. 卷死他們
 """
 
-import g2m
-from g2m import CNN
+import NIKKE_OCR.model as model
+from NIKKE_OCR.model import CNN
 from brutal import Rect, Node, eliminate, generate
 import os
 import time
@@ -18,15 +18,15 @@ import rich, rich.live, rich.panel
 def main():
     # prepare the input image
     os.makedirs("./temp", exist_ok=True)
-    image_source = g2m.to_png("./temp", "temp.png")
+    image_source = model.to_png("./temp", "temp.png")
     if image_source is None:
         # load image from ./temp/temp.png
         image_source = Image.open("./temp/temp.png")
     image = list()
-    dx = 635 // g2m.SIZE_X
-    dy = 1080 // g2m.SIZE_Y
-    for j in range(g2m.SIZE_Y):
-        for i in range(g2m.SIZE_X):
+    dx = 635 // model.SIZE_X
+    dy = 1080 // model.SIZE_Y
+    for j in range(model.SIZE_Y):
+        for i in range(model.SIZE_X):
             left = i * dx
             right = left + dx
             upper = j * dy
@@ -49,26 +49,25 @@ def main():
             output = model(img.unsqueeze(0))
             number = output.argmax(dim=1).item() + 1
             output_list.append(number)
-    matrix = numpy.array(output_list).reshape((g2m.SIZE_Y, g2m.SIZE_X))
+    matrix = numpy.array(output_list).reshape((model.SIZE_Y, model.SIZE_X))
     root = Node(parent_matrix=matrix, choice=None, parent=None)
 
     print("start searching")
     console = rich.console.Console()
     start_time = time.time()
-    Node.global_trail = 0
-    with rich.live.Live(console=console, refresh_per_second=10) as live:
+    with rich.live.Live(console=console, refresh_per_second=4) as live:
         elapsed = time.time() - start_time
-        live.update(rich.panel.Panel(f"Elapsed: {elapsed:.1f}s\nRun: {Node.global_trail} times", title=f"tracker", expand=False))
+        live.update(rich.panel.Panel(f"Elapsed: {elapsed:.1f}s", title=f"tracker", expand=False))
         best_steps, best_score = root.dfs()
     
     print(best_score)
     for i, rect in enumerate(best_steps, 1):
-        with open("./log.txt", 'w') as f:
+        with open("./result.txt", 'w') as f:
             f.write(f"Step {i:2d}: {rect}\n")
-    with open("./log.txt", 'w') as f:
-        f.write(matrix.__str__() + '\n')
-        for rect in generate(matrix):
-            f.write(f"{rect}, mat = \n{matrix[rect.start_y:rect.start_y+rect.height, rect.start_x:rect.start_x+rect.width]}\n")
+    # with open("./log.txt", 'w') as f:
+    #     f.write(matrix.__str__() + '\n')
+    #     for rect in generate(matrix):
+    #         f.write(f"{rect}, mat = \n{matrix[rect.start_y:rect.start_y+rect.height, rect.start_x:rect.start_x+rect.width]}\n")
 
 
 if __name__ == "__main__":
