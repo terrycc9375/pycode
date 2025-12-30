@@ -62,25 +62,6 @@ def cut(path: str, id: int):
             unit = img.crop((left, upper, right, lower))
             unit.save(f"{path}/input/{(id - 1) * 112 + j * SIZE_X + i}.png")
 
-    # draw = ImageDraw.Draw(img)
-
-    # # vertical lines
-    # for j in range(7):
-    #     x = (635 // 8) * (j + 1)
-    #     draw.line(
-    #         [(x, 0), (x, 1080)],
-    #         fill="#f022ae",
-    #         width=2
-    #     )
-    # # horizontal lines
-    # for i in range(13):
-    #     y = (1080 // 14) * (i + 1)
-    #     draw.line(
-    #         [(0, y), (635, y)],
-    #         fill="#222cf0",
-    #         width=2
-    #     )
-    # img.save("temp.png")
 
 class DS(torch.utils.data.Dataset):
     def __init__(self, img_dir, label: list[int], transform=None):
